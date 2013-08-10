@@ -5,8 +5,7 @@ use LWP::Simple;
 
 use 5.006;
 use strict;
-#use warnings FATAL => 'all';
-use warnings;
+use warnings FATAL => 'all';
 
 =head1 NAME
 
@@ -19,7 +18,6 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-
 
 =head1 SYNOPSIS
 
@@ -71,7 +69,7 @@ sub input {
 			print "Getting " . @{$opts->{get}};
 		}
 	
-		for (my $i = 0; $i < $rp->count() && $i < 3; $i++) {
+		for (my $i = 0; $i < $rp->count(); $i++) {
 		    my $it = $rp->get($i);
 			for my $key (@{$opts->{get}}) {
 				push @{$output->{$key}}, $it->get($key);				
