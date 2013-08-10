@@ -1,55 +1,55 @@
-use XML::RSS::Parser::Lite;
-use LWP::Simple;
+use Animated::Shame;
 
-($url) = @ARGV or die "$0 <url of reddit rss>";
+use Getopt::Std;
 
-my $xml = get($url);
-my $rp = new XML::RSS::Parser::Lite;
+use strict;
+use warnings;
 
-$rp->parse($xml);
-        
-print "Got RSS Index [" . $rp->count() . "]\n";
-print "Getting Titles and Descriptions [";
-my @titles, @descriptions, @urls, @comments;
+my $transform_to_subreddit = sub {
+	my $output = shift;
+	my $urls = [map {$_ . '.rss'} @{$output->{url}}];
+	my $shame = Animated::Shame->new();
+	my $desc = $shame->input({
+		urls => $urls,
+		get => ['description'],
+		verbose => 1
+	});
+	$output->{comment} = $desc->{description};
 
-for (my $i = 0; $i < $rp->count(); $i++) {
-    my $it = $rp->get($i);
-    push @titles, $it->get('title');
-    push @descriptions, $it->get('description');
-    push @urls, $it->get('url');
-    print ".";
-}
+	return $output;
+};
 
-print "]\n";
+my $opts = {
+	'h' => 'http://www.reddit.com/.rss'
+};
+
+my $shame = Animated::Shame->new();
+
+getopt('h', $opts);
+
+my $output = $shame->input({
+	urls => [$opts->{h}],
+	verbose => 1,
+	transform => $transform_to_subreddit,
+	get => [qw/title description url/]
+});
 
 open TITLES, ">titles.txt";
 open DESC, ">desc.txt";
 open URLS, ">urls.txt";
+open COMMENTS, ">comments.txt";
 
+my @titles = @{$output->{title}};
+my @descriptions = @{$output->{description}};
+my @urls = @{$output->{url}};
+my @comments = @{$output->{comment}};
 
 foreach (@titles) { print TITLES $_ . "\n"; }
 foreach (@descriptions) { print DESC $_ . "\n"; }
-
-foreach (@urls) {
-print URLS $_ . "\n";
-my $xmla = get($_.".rss");
-my $rpa = new XML::RSS::Parser::Lite;
-
-$rpa->parse($xmla);
-
-for (my $i = 0; $i < $rpa->count(); $i++) {
-my $ita = $rpa->get($i);
-push @comments, $ita->get('description');
-}
-
-}
+foreach (@urls) { print URLS $_ . "\n"; }
+foreach (@comments) { print COMMENTS $_ . "\n"; }
 
 close TITLES;
 close DESC;
 close URLS;
-
-open COMMENTS, ">comments.txt";
-
-foreach (@comments) { print COMMENTS $_ . "\n"; }
-
 close COMMENTS;
