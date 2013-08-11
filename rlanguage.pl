@@ -1,21 +1,42 @@
 use Animated::Shame;
 
 use Getopt::Long;
+use MongoDB;
+use POSIX;
 
 use strict;
 use warnings;
 
-my $transform_to_subreddit = sub {
+sub get_subreddit {
 	my $output = shift;
 
-	my $urls = [map {$_ . '.rss'} @{$output->{url}}];
+	my @top_urls = keys %{$output->{url}};
 	my $shame = Animated::Shame->new();
-	my $desc = $shame->input({
-		urls => $urls,
-		get => ['description'],
-		verbose => 1
-	});
-	$output->{comment} = $desc->{description};
+	for my $top_url (@top_urls) {
+		my $clean_url = $top_url;
+		$clean_url =~ tr/./;/;
+		warn $clean_url;
+		$output->{url}->{$clean_url} = delete $output->{url}->{$top_url};
+		$output->{url}->{$clean_url}->{url_comments} = map {
+			my $orig = $_;
+			my $rss = $orig . '.rss';
+			my $comments = $shame->input({
+				urls => [$rss],
+				get => ['description'],
+				verbose => 1,
+				transform => sub {
+					my $output = shift;	
+					for my $top_url (@top_urls) {
+						my $clean_url = $top_url;
+						$clean_url =~ tr/./;/;
+						$output->{url}->{$clean_url} = delete $output->{url}->{$top_url};
+					}
+					return $output;
+				}
+			});			
+		 	{$orig => $comments};
+		} @{$output->{url}->{$clean_url}->{url}};
+	}
 
 	return $output;
 };
@@ -39,11 +60,6 @@ sub prepare_options {
 		get => [qw/title description url/] 
 	};
 	
-	# assume we're downloading the main reddit rss
-	if (!$subreddit) {
-		$shame_options->{transform} = $transform_to_subreddit;
-	}
-
 	return $shame_options;
 }
 
@@ -71,6 +87,16 @@ sub write_to_file {
 	close COMMENTS; 
 }
 
+sub write_to_mongodb {
+	my $output = shift;
+    my $connection = MongoDB::Connection->new(host => 'localhost', port => 27017);
+    my $database   = $connection->get_database( 'reddit_data' );
+	my $now 	   = strftime "%FT%T", localtime $^T;
+    my $collection = $database->get_collection( "$now" );
+    my $id         = $collection->insert($output);
+}
+
 my $shame = Animated::Shame->new();
 my $output = $shame->input(prepare_options());
-write_to_file($output);
+$output = get_subreddit($output);
+write_to_mongodb($output);

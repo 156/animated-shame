@@ -6,6 +6,7 @@ use LWP::Simple;
 use 5.006;
 use strict;
 use warnings FATAL => 'all';
+use utf8;
 
 =head1 NAME
 
@@ -67,13 +68,13 @@ sub input {
 			if ( $opts->{verbose} ) {
 				print "\n\nWorking on URL $url\n";
 				print "Got RSS Index [" . $rp->count() . "]\n";
-				print "Getting " . @{$opts->{get}};
+				print "Getting " . join(' ', @{$opts->{get}});
 			}
 	
 			for (my $i = 0; $i < $rp->count(); $i++) {
 			    my $it = $rp->get($i);
 				for my $key (@{$opts->{get}}) {
-					push @{$output->{$key}}, $it->get($key);				
+					push @{$output->{url}->{$url}->{$key}}, $it->get($key);				
 				}
 			    print "." if $opts->{verbose};
 			}
