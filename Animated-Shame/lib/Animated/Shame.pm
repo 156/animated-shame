@@ -58,23 +58,25 @@ sub input {
 	my $output = {};
 
 	for my $url (@{$opts->{urls}}) {
-		my $xml = get($url);
-		my $rp = XML::RSS::Parser::Lite->new();
-		
-		$rp->parse($xml);
-		        
-		if ( $opts->{verbose} ) {
-			print "\n\nWorking on URL $url\n";
-			print "Got RSS Index [" . $rp->count() . "]\n";
-			print "Getting " . @{$opts->{get}};
-		}
-	
-		for (my $i = 0; $i < $rp->count(); $i++) {
-		    my $it = $rp->get($i);
-			for my $key (@{$opts->{get}}) {
-				push @{$output->{$key}}, $it->get($key);				
+		if (defined $url) {
+			my $xml = get($url);
+			my $rp = XML::RSS::Parser::Lite->new();
+			
+			$rp->parse($xml);
+			        
+			if ( $opts->{verbose} ) {
+				print "\n\nWorking on URL $url\n";
+				print "Got RSS Index [" . $rp->count() . "]\n";
+				print "Getting " . @{$opts->{get}};
 			}
-		    print "." if $opts->{verbose};
+	
+			for (my $i = 0; $i < $rp->count(); $i++) {
+			    my $it = $rp->get($i);
+				for my $key (@{$opts->{get}}) {
+					push @{$output->{$key}}, $it->get($key);				
+				}
+			    print "." if $opts->{verbose};
+			}
 		}
 	}
 		
