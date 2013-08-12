@@ -21,7 +21,7 @@ $pnum++;
 
 for (my $i=1;$i<$pnum;$i++)
 {
-	my $search = "http://knowyoururl/page/$i/";
+	my $search = "http://knowyourmeme.com/page/$i/";
 
 	my $tx = $ua->get($search);
 

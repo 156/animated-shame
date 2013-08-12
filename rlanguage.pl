@@ -10,6 +10,7 @@ use warnings;
 sub get_subreddit {
 	my $output = shift;
 
+	my @comments_list = ();
 	my @top_urls = keys %{$output->{url}};
 	my $shame = Animated::Shame->new();
 	for my $top_url (@top_urls) {
@@ -38,7 +39,7 @@ sub get_subreddit {
 		} @{$output->{url}->{$clean_url}->{url}};
 	}
 
-	return $output;
+	return (@comments_list, $output);
 };
 
 
@@ -98,5 +99,11 @@ sub write_to_mongodb {
 
 my $shame = Animated::Shame->new();
 my $output = $shame->input(prepare_options());
-$output = get_subreddit($output);
-write_to_mongodb($output);
+my @comments = ();
+(@comments, $output) = get_subreddit($output);
+foreach my $url (keys %{$output->{url}}) {
+	print "Entering\n";
+	foreach (@{$output->{url}->{$url}->{url_comments}}) {
+		print "$_\n";	
+	}
+}
